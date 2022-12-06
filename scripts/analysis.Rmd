@@ -25,6 +25,8 @@ md <- read_csv("collection_metadata.csv") %>%
 #   mutate(lat = parse_lat(lat), lon = parse_lon(lon))
 # 
 # write_csv(md, "colony_metadata_parsed.csv")
+
+md[which(duplicated(md$basket_no)),]
 ```
 
 ```{r}
@@ -51,7 +53,6 @@ gps_tracks <- gps_tracks %>%
 # Pull coral lat/lon from gps tracks based on date/time sampled
 df <- left_join(md, gps_tracks, by = c("gps_id", "date_time_min"))
 
-names(md)
-names(gps_tracks)
+View(df)
 ```
 

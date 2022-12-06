@@ -1,0 +1,223 @@
+---
+title: "drc_fitting"
+author: "ross"
+date: "12/6/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(drc)
+library(quantreg)
+library(mcr)
+library(broom)
+library(lubridate)
+library(tidyverse)
+
+# Create custom ggplot theme
+theme_custom <- function() {
+  theme_bw(base_size = 10, base_family = "Arial") %+replace%
+    theme(
+      panel.grid.major = element_blank(), 
+      panel.grid.minor = element_blank(), 
+      panel.background = element_blank(),
+      panel.border = element_rect(color = "black", fill = NA),
+      legend.background = element_rect(fill = NA, colour = NA),
+      axis.title = element_text(size = 7),
+      axis.text = element_text(size = 5)
+    )
+}
+
+# # Labeller for treatments
+# treatment_labeller <- function(variable, value){
+#   return(list(
+#   'Normal'="High light",
+#   'lowLight'="Low light")[value])
+# }
+# 
+
+# Function to pivot IPAM data to long form with column for AOI
+ipam_convert <- function(data) {
+  data %>% select_if(~ !any(is.na(.))) %>%
+  pivot_longer(cols = starts_with("f") | starts_with("y")) %>%
+  separate(name, into = c("var", "aoi"), sep = "(?<=[A-Za-z_])(?=[0-9])")
+}
+```
+
+# Import I-PAM data
+```{r}
+# Import PAM data
+# List PAM files from 2021-09-06
+pamfiles <- list.files(path = "data/IPAM_data", pattern = "*.csv", recursive = TRUE, full.names = TRUE)
+
+# Import data from each file
+pam1 <- pamfiles %>%
+  map_dfr(read_delim, delim = ";", .id = "file_id") %>%
+  janitor::clean_names() %>%
+  mutate(file_id = basename(pamfiles[as.numeric(file_id)]),
+         date = as_date(date, format = "%d.%m.%y"))
+
+pam1
+
+# # For files that have multiple sat pulses -- keep the last one only
+# pam1 <- pam1 %>%
+#   group_by(file_id, date) %>%
+#   filter(no == max(no)) %>%
+#   ungroup()
+
+# For each source file, convert to long form data with F, FM, and YII for each AOI
+pam1 <- pam1 %>%
+  nest(-file_id, -date) %>%
+  mutate(data2 = map(data, ipam_convert)) %>%
+  unnest(data2) %>%
+  group_by(file_id, date) %>%
+  select(file_id, date, time, aoi, var, value)
+
+# # Join PAM data with rack order information (which PAM file corresponds to which rack of corals)
+# pam <- full_join(pam1, pammd) %>%
+#   group_by(file_id, date) %>%
+#   mutate(position = as.numeric(aoi))
+
+# Get temperature from fileID
+pam <- pam1 %>%
+  separate(file_id, into = c("filename", "species", "max_temp"))
+
+# # Join PAM data with coral genet and temperature treatment information (which AOI corresponds to which coral)
+# pam <- genetmd %>%
+#   filter(genet != 77) %>%     # genet 77 not used in low light so no comparison
+#   left_join(pam, by = c("date", "rack_color", "position"))
+```
+
+# Fit dose-response curves
+```{r}
+# Get Fv/Fm data and tidy
+df <- pam %>%
+  pivot_wider(names_from = var, values_from = value) %>%
+  mutate(fvfmraw = y_ii_, fvfm = y_ii_,
+         max_temp = as.numeric(max_temp))
+
+# Filter out outlier
+df %>% filter(species == "Ahya", fvfm < 0.05)
+# 
+# # Replace significant outlier for geno129, normal light, 30°C, where Fv/Fm was < 0.4, while fitted curve suggests should be around 0.55. This significantly affects ED50 so changing this values to 0.55.
+# df[df$geno == 129 & df$treatment == "Normal" & df$max_temp == 30, "fvfm"] <- 0.5
+
+# # Define function to fit 3-parameter LL model to data and return NULL if fitting error
+# ll3 <- function(data) {
+#   drm(fvfm ~ max_temp, data = data, 
+#       fct = LL.3(names = c("hill", "max", "ED50")),
+#       upperl = c(50, 0.7, 40),
+#       lowerl = c(20, 0.3, 30))}
+# tryll3 <- possibly(ll3, otherwise = NULL)
+# 
+# # Fit model to each coral, get parameters, fitted values, and residuals
+# initmods <- df %>%
+#   nest(data = c(max_temp, f, fm, fvfmraw, fvfm)) %>%
+#   # Fit the model to each coral
+#   mutate(ll3 = map(data, tryll3)) %>%
+#   # Get model parameters and fitted values/residuals
+#   mutate(pars = map(ll3, tidy),
+#          pred = map2(ll3, data, ~augment(.x, drop_na(.y, fvfm))))
+
+
+# Fit model to all data for Apulchra
+mod <- drm(fvfm ~ max_temp, curveid = species, data = df, 
+           fct = LL.3(names = c("hill", "max", "ED50")),
+           upperl = c(50, 0.7, 40),
+           lowerl = c(20, 0.3, 30))
+
+# Get parameters
+pars <- tidy(mod)
+pars
+# Get fitted values
+vals <- augment(mod, df)
+
+# Plot
+ggplot(vals, aes(x = max_temp, y = fvfm)) +
+  geom_point() +
+  facet_wrap(~species) +
+  geom_line(aes(y = .fitted)) +
+  #geom_vline(xintercept = filter(pars, term == "ED50") %>% pull(estimate), lty= 2) +
+  scale_x_continuous(breaks = 28:38)
+
+# maybe do 28.5, 31, 33, 34, 35, 36, 37, 38
+
+```
+
+```{r drc_diagnostics}
+
+# #### diagnostics
+# Extract hill parameter values from model fits
+# hill <- initmods %>%
+#   select(nursery, geno, pars) %>%
+#   unnest(pars) %>%
+#   filter(term == "hill")
+# ggplot(hill) +
+#   geom_histogram(aes(x = estimate))
+# hill %>% arrange(estimate)
+# 
+# maxes <- initmods %>%
+#   select(nursery, geno, pars) %>%
+#   unnest(pars) %>%
+#   filter(term == "max")
+# ggplot(maxes) +
+#   geom_histogram(aes(x = estimate))
+# maxes %>% arrange(-estimate)
+
+# # Identify problematic data points based on cook's distance and residuals
+counts <- vals %>%
+  group_by(treatment, geno) %>%
+  summarise(n = sum(!is.na(fvfm)))
+dff <- vals %>%
+  left_join(counts) %>%
+  group_by(treatment, geno) %>%
+  mutate(cooksd.thresh = 4/n) %>%   # Calculate cook's distance threshold as 4/n
+  mutate(max_to_remove = floor(n * 0.2)) %>%
+  ungroup() %>%
+  mutate(problem = case_when(.cooksd > cooksd.thresh ~ "high cook's distance",
+                             TRUE ~ "none")) %>%
+  group_by(treatment, geno, outlier = problem %in% c("high cook's distance", "high residual")) %>%
+  mutate(n.outliers = n(),
+         rank.out = order(.cooksd, decreasing = TRUE)) %>%
+  ungroup() %>%
+  mutate(fvfm = case_when(outlier & rank.out <= max_to_remove ~ .fitted,
+                          TRUE ~ fvfm))
+
+# Refit models without problematic points
+fmods <- dff %>%
+  select(treatment, geno, max_temp, f, fm, fvfmraw, problem, fvfm) %>%
+  nest(data = c(max_temp, f, fm, fvfmraw, fvfm, problem)) %>%
+  # Fit the model to each coral
+  mutate(ll3 = map(data, tryll3)) %>%
+  # Get model parameters and fitted values/residuals
+  mutate(pars = map(ll3, tidy),
+         pred = map2(ll3, data, ~augment(.x, drop_na(.y, fvfm))))
+
+# Extract ed50 parameter values from model fits
+fed50 <- fmods %>%
+  select(treatment, geno, pars) %>%
+  unnest(pars) %>%
+  filter(term == "ED50")
+
+# Collect raw data, fitted values, and ed50 estimates
+fvals <- fmods %>%
+  select(treatment, geno, pred) %>%
+  unnest(pred) %>%
+  full_join(fed50) %>%
+  full_join(select(dff, treatment, geno, max_temp, f, fm, fvfmraw, problem, fvfm)) %>%
+  rename(ed50 = estimate)
+```
+
+
+# Plot dose response curves for each genotype
+```{r plot, fig.width = 10, fig.height = 10}
+ggplot(vals, aes(x = max_temp, y = fvfm, color = treatment)) +
+  geom_point() +
+  geom_line(aes(y = .fitted)) +
+  facet_wrap(~geno)
+```
+
