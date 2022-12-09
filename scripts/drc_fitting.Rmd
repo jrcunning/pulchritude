@@ -48,6 +48,30 @@ ipam_convert <- function(data) {
 }
 ```
 
+# Import rack, temperature, and coral position information
+```{r}
+# Import coral collection data
+corals <- read_csv("data/collection_metadata.csv") %>%
+  mutate(date = as_date(as.character(date_CBASS)))
+
+# Import CBASS metadata (positions of corals on racks, and CBASS temperatures of each rack)
+rack_pos <- read_csv("data/CBASS_rack_position_map.csv") %>%
+  mutate(date = as_date(as.character(date)))
+rack_temp <- read_csv("data/CBASS_rack_temp_map.csv") %>%
+  mutate(date = as_date(as.character(date)))
+
+md <- full_join(rack_temp, rack_pos)
+md <- md %>%
+  unite(rack, rack_no, rack_config, sep = "")
+
+# Replace certain rack names for joining with PAM data
+## There were two '53C' racks on 20221204
+md <- md %>%
+  mutate(rack = case_when(date == "2022-12-04" & rack == "53C" & temp == 31 ~ "53C_31blue",
+                          TRUE ~ rack))
+
+```
+
 # Import I-PAM data
 ```{r}
 # Import PAM data
@@ -60,8 +84,6 @@ pam1 <- pamfiles %>%
   janitor::clean_names() %>%
   mutate(file_id = basename(pamfiles[as.numeric(file_id)]),
          date = as_date(date, format = "%d.%m.%y"))
-
-pam1
 
 # # For files that have multiple sat pulses -- keep the last one only
 # pam1 <- pam1 %>%
@@ -77,75 +99,64 @@ pam1 <- pam1 %>%
   group_by(file_id, date) %>%
   select(file_id, date, time, aoi, var, value)
 
-# # Join PAM data with rack order information (which PAM file corresponds to which rack of corals)
-# pam <- full_join(pam1, pammd) %>%
-#   group_by(file_id, date) %>%
-#   mutate(position = as.numeric(aoi))
+pam1 <- pam1 %>%
+  separate(file_id, into = c("rack", "junk"))
+  
 
-# Get temperature from fileID
+# Join PAM data with rack order information (which PAM file corresponds to which rack of corals)
 pam <- pam1 %>%
-  separate(file_id, into = c("filename", "species", "max_temp"))
+  group_by(rack, date) %>%
+  mutate(position = ceiling(as.numeric(aoi)/2)) %>%
+  ungroup()
 
-# # Join PAM data with coral genet and temperature treatment information (which AOI corresponds to which coral)
-# pam <- genetmd %>%
-#   filter(genet != 77) %>%     # genet 77 not used in low light so no comparison
-#   left_join(pam, by = c("date", "rack_color", "position"))
+pam <- left_join(pam, md) %>% left_join(corals)
 ```
 
 # Fit dose-response curves
 ```{r}
 # Get Fv/Fm data and tidy
 df <- pam %>%
+  mutate(max_temp = as.numeric(temp)) %>%
   pivot_wider(names_from = var, values_from = value) %>%
-  mutate(fvfmraw = y_ii_, fvfm = y_ii_,
-         max_temp = as.numeric(max_temp))
+  mutate(fvfmraw = y_ii_, fvfm = y_ii_) %>%
+  select(date, tag_no, max_temp, f, fm, fvfmraw, fvfm)
 
-# Filter out outlier
-df %>% filter(species == "Ahya", fvfm < 0.05)
-# 
-# # Replace significant outlier for geno129, normal light, 30°C, where Fv/Fm was < 0.4, while fitted curve suggests should be around 0.55. This significantly affects ED50 so changing this values to 0.55.
-# df[df$geno == 129 & df$treatment == "Normal" & df$max_temp == 30, "fvfm"] <- 0.5
+# Define function to fit 3-parameter LL model to data and return NULL if fitting error
+ll3 <- function(data) {
+  drm(fvfm ~ max_temp, data = data, 
+      fct = LL.3(names = c("hill", "max", "ED50")))}#,
+      # upperl = c(50, 0.7, 40),
+      # lowerl = c(20, 0.3, 30))}
+tryll3 <- possibly(ll3, otherwise = NULL)
 
-# # Define function to fit 3-parameter LL model to data and return NULL if fitting error
-# ll3 <- function(data) {
-#   drm(fvfm ~ max_temp, data = data, 
-#       fct = LL.3(names = c("hill", "max", "ED50")),
-#       upperl = c(50, 0.7, 40),
-#       lowerl = c(20, 0.3, 30))}
-# tryll3 <- possibly(ll3, otherwise = NULL)
-# 
-# # Fit model to each coral, get parameters, fitted values, and residuals
-# initmods <- df %>%
-#   nest(data = c(max_temp, f, fm, fvfmraw, fvfm)) %>%
-#   # Fit the model to each coral
-#   mutate(ll3 = map(data, tryll3)) %>%
-#   # Get model parameters and fitted values/residuals
-#   mutate(pars = map(ll3, tidy),
-#          pred = map2(ll3, data, ~augment(.x, drop_na(.y, fvfm))))
+# Fit model to each coral, get parameters, fitted values, and residuals
+initmods <- df %>%
+  nest(data = c(date, max_temp, f, fm, fvfmraw, fvfm)) %>%
+  # Fit the model to each coral
+  mutate(ll3 = map(data, tryll3)) %>%
+  # Get model parameters and fitted values/residuals
+  mutate(pars = map(ll3, tidy),
+         pred = map2(ll3, data, ~augment(.x, drop_na(.y, fvfm))))
 
+# Extract ed50 parameter values from model fits
+ed50 <- initmods %>% 
+  select(tag_no, pars) %>%
+  unnest(pars) %>%
+  filter(term == "ED50")
 
-# Fit model to all data for Apulchra
-mod <- drm(fvfm ~ max_temp, curveid = species, data = df, 
-           fct = LL.3(names = c("hill", "max", "ED50")),
-           upperl = c(50, 0.7, 40),
-           lowerl = c(20, 0.3, 30))
+hist(ed50$estimate, breaks = 30)
 
-# Get parameters
-pars <- tidy(mod)
-pars
-# Get fitted values
-vals <- augment(mod, df)
+# Collect raw data, fitted values, and diagnostics
+vals <- initmods %>%
+  select(tag_no, pred) %>%
+  unnest(pred) %>%
+  full_join(ed50) %>%
+  full_join(df) %>%
+  rename(ed50 = estimate) %>%
+  mutate(problem = "none")
 
-# Plot
-ggplot(vals, aes(x = max_temp, y = fvfm)) +
-  geom_point() +
-  facet_wrap(~species) +
-  geom_line(aes(y = .fitted)) +
-  #geom_vline(xintercept = filter(pars, term == "ED50") %>% pull(estimate), lty= 2) +
-  scale_x_continuous(breaks = 28:38)
-
-# maybe do 28.5, 31, 33, 34, 35, 36, 37, 38
-
+vals %>%
+  filter(tag_no == 11)
 ```
 
 ```{r drc_diagnostics}
@@ -215,9 +226,19 @@ fvals <- fmods %>%
 
 # Plot dose response curves for each genotype
 ```{r plot, fig.width = 10, fig.height = 10}
-ggplot(vals, aes(x = max_temp, y = fvfm, color = treatment)) +
+ed50 <- ed50 %>%
+  mutate(tag_no = factor(tag_no))
+
+
+vals <- vals %>%
+  mutate(tag_no = fct_reorder(factor(tag_no), ed50, .fun = mean))
+
+ggplot(vals, aes(x = max_temp, y = fvfm)) +
   geom_point() +
   geom_line(aes(y = .fitted)) +
-  facet_wrap(~geno)
+  geom_vline(aes(xintercept = estimate), data = ed50, lty = 2) +
+  geom_text(aes(x = estimate, y = 0.05, label = round(estimate, 2)), data = ed50,
+            size = 2, nudge_x = -1.5) +
+  facet_wrap(~tag_no)
 ```
 
