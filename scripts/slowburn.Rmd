@@ -1,0 +1,124 @@
+---
+title: "slowburn"
+author: "ross"
+date: "12/13/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(drc)
+library(quantreg)
+library(mcr)
+library(broom)
+library(lubridate)
+library(tidyverse)
+
+# Create custom ggplot theme
+theme_custom <- function() {
+  theme_bw(base_size = 10, base_family = "Arial") %+replace%
+    theme(
+      panel.grid.major = element_blank(), 
+      panel.grid.minor = element_blank(), 
+      panel.background = element_blank(),
+      panel.border = element_rect(color = "black", fill = NA),
+      legend.background = element_rect(fill = NA, colour = NA),
+      axis.title = element_text(size = 7),
+      axis.text = element_text(size = 5)
+    )
+}
+
+# # Labeller for treatments
+# treatment_labeller <- function(variable, value){
+#   return(list(
+#   'Normal'="High light",
+#   'lowLight'="Low light")[value])
+# }
+# 
+
+# Function to pivot IPAM data to long form with column for AOI
+ipam_convert <- function(data) {
+  data %>% select_if(~ !any(is.na(.))) %>%
+  pivot_longer(cols = starts_with("f") | starts_with("y")) %>%
+  separate(name, into = c("var", "aoi"), sep = "(?<=[A-Za-z_])(?=[0-9])")
+}
+```
+
+# Import rack, temperature, and coral position information
+```{r}
+# Import slowburn metadata (positions of corals on racks, and treatments)
+rack_pos <- read_csv("data/CLASSIC_rack_position_map.csv") %>%
+  mutate(date = as_date(as.character(date)))
+
+md <- rack_pos %>%
+  filter(time == "evening")
+```
+
+# Import I-PAM data
+```{r}
+# Import PAM data
+# List PAM files from 2021-09-06
+pamfiles <- list.files(path = "data/IPAM_data", pattern = "*.csv", recursive = TRUE, full.names = TRUE)
+
+slowburnpamfiles <- pamfiles[grepl("Slow", pamfiles)]
+
+# Import data from each file
+pam1 <- slowburnpamfiles %>%
+  map_dfr(read_delim, delim = ";", .id = "file_id") %>%
+  janitor::clean_names() %>%
+  mutate(file_id = basename(slowburnpamfiles[as.numeric(file_id)]),
+         date = as_date(date, format = "%d.%m.%y"))
+
+# # For files that have multiple sat pulses -- keep the last one only
+# pam1 <- pam1 %>%
+#   group_by(file_id, date) %>%
+#   filter(no == max(no)) %>%
+#   ungroup()
+
+# For each source file, convert to long form data with F, FM, and YII for each AOI
+pam1 <- pam1 %>%
+  nest(-file_id, -date) %>%
+  mutate(data2 = map(data, ipam_convert)) %>%
+  unnest(data2) %>%
+  group_by(file_id, date) %>%
+  select(file_id, date, time, aoi, var, value)
+
+pam1 <- pam1 %>%
+  separate(file_id, into = c("rack_no", "junk")) %>%
+  mutate(rack_no = as.numeric(rack_no))
+  
+
+# Join PAM data with rack order information (which PAM file corresponds to which rack of corals)
+pam <- pam1 %>%
+  group_by(rack_no, date) %>%
+  mutate(position = ceiling(as.numeric(aoi)/2)) %>%
+  ungroup()
+
+pam <- left_join(pam, md, by = c("date", "rack_no", "position"))
+```
+
+
+```{r}
+pam <- pam %>%
+  separate(frag_id, into = c("genotype", "frag"))
+
+res <- pam %>%
+  filter(var == "y_ii_") %>%
+  group_by(genotype, treatment) %>%
+  summarize(mean = mean(value), sd = sd(value)) %>%
+  ungroup() %>%
+  mutate(genotype = fct_reorder(factor(genotype), mean))
+
+
+res %>%
+  ggplot(aes(x = genotype, y = mean, color = treatment)) +
+  geom_errorbar(aes(ymin = mean - sd, ymax = mean + sd)) +
+  geom_point()
+
+g10 <- pam %>%
+  filter(genotype == 10, var == "y_ii_")
+```
+

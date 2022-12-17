@@ -15,7 +15,7 @@ library(lubridate)
 
 ```{r}
 # Read in coral collection info
-md <- read_csv("collection_metadata.csv") %>%
+md <- read_csv("data/collection_metadata.csv") %>%
   unite(date_time, date_sampled, time_sampled, sep = " ") %>%
   mutate(date_time = ymd_hms(date_time, tz = "Pacific/Tahiti"),
          date_time_min = format(date_time, "%F %H:%M"))
@@ -54,5 +54,18 @@ gps_tracks <- gps_tracks %>%
 df <- left_join(md, gps_tracks, by = c("gps_id", "date_time_min"))
 
 View(df)
+```
+
+
+```{r}
+# Write lat/lon to file
+write_csv(df, "data/colony_coords.csv")
+```
+
+
+
+```{r}
+
+
 ```
 
