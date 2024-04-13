@@ -73,10 +73,10 @@ pam1 <- slowburnpamfiles %>%
          date = as_date(date, format = "%d.%m.%y"))
 
 # # For files that have multiple sat pulses -- keep the last one only
-# pam1 <- pam1 %>%
-#   group_by(file_id, date) %>%
-#   filter(no == max(no)) %>%
-#   ungroup()
+pam1 <- pam1 %>%
+  group_by(file_id, date) %>%
+  filter(no == max(no)) %>%
+  ungroup()
 
 # For each source file, convert to long form data with F, FM, and YII for each AOI
 pam1 <- pam1 %>%
@@ -106,7 +106,7 @@ pam <- pam %>%
   separate(frag_id, into = c("genotype", "frag"))
 
 res <- pam %>%
-  filter(var == "y_ii_") %>%
+  filter(date == "2022-12-13", var == "y_ii_") %>%
   group_by(genotype, treatment) %>%
   summarize(mean = mean(value), sd = sd(value)) %>%
   ungroup() %>%
@@ -118,7 +118,28 @@ res %>%
   geom_errorbar(aes(ymin = mean - sd, ymax = mean + sd)) +
   geom_point()
 
-g10 <- pam %>%
-  filter(genotype == 10, var == "y_ii_")
+sbres <- res %>% 
+  select(genotype, treatment, mean) %>%
+  pivot_wider(names_from = treatment, values_from = mean) %>%
+  mutate(decline = high - ambient)
+```
+
+
+```{r}
+both <- sbres %>%
+  mutate(tag_no = genotype) %>%
+  left_join(mutate(fed50, genotype = geno))
+
+library(ggpubr)
+ggplot(both, aes(x = estimate, y = decline)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  #geom_label(aes(label = genotype)) +
+  stat_cor(method = "pearson", label.y = -0) + 
+  labs(x = "Heat tolerance measured by CBASS (ED50)", y = "Heat tolerance measured in\nclassic bleaching experiment (Drop in Fv/Fm)")
+
+mod <- lm(decline ~ estimate, data = both)
+anova(mod)
+
 ```
 

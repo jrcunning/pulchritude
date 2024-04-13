@@ -75,8 +75,9 @@ md <- md %>%
 # Import I-PAM data
 ```{r}
 # Import PAM data
-# List PAM files from 2021-09-06
+# List PAM files for pulchritude corals
 pamfiles <- list.files(path = "data/IPAM_data", pattern = "*.csv", recursive = TRUE, full.names = TRUE)
+pamfiles <- grep("Pulchritude", pamfiles, value = TRUE)
 
 # Import data from each file
 pam1 <- pamfiles %>%
@@ -86,10 +87,10 @@ pam1 <- pamfiles %>%
          date = as_date(date, format = "%d.%m.%y"))
 
 # # For files that have multiple sat pulses -- keep the last one only
-# pam1 <- pam1 %>%
-#   group_by(file_id, date) %>%
-#   filter(no == max(no)) %>%
-#   ungroup()
+pam1 <- pam1 %>%
+  group_by(file_id, date) %>%
+  filter(no == max(no)) %>%
+  ungroup()
 
 # For each source file, convert to long form data with F, FM, and YII for each AOI
 pam1 <- pam1 %>%
@@ -181,17 +182,19 @@ vals %>%
 
 # # Identify problematic data points based on cook's distance and residuals
 counts <- vals %>%
-  group_by(treatment, geno) %>%
+  mutate(geno = tag_no) %>%
+  group_by(geno) %>%
   summarise(n = sum(!is.na(fvfm)))
 dff <- vals %>%
+  mutate(geno = tag_no) %>%
   left_join(counts) %>%
-  group_by(treatment, geno) %>%
+  group_by(geno) %>%
   mutate(cooksd.thresh = 4/n) %>%   # Calculate cook's distance threshold as 4/n
   mutate(max_to_remove = floor(n * 0.2)) %>%
   ungroup() %>%
   mutate(problem = case_when(.cooksd > cooksd.thresh ~ "high cook's distance",
                              TRUE ~ "none")) %>%
-  group_by(treatment, geno, outlier = problem %in% c("high cook's distance", "high residual")) %>%
+  group_by(geno, outlier = problem %in% c("high cook's distance", "high residual")) %>%
   mutate(n.outliers = n(),
          rank.out = order(.cooksd, decreasing = TRUE)) %>%
   ungroup() %>%
@@ -200,7 +203,7 @@ dff <- vals %>%
 
 # Refit models without problematic points
 fmods <- dff %>%
-  select(treatment, geno, max_temp, f, fm, fvfmraw, problem, fvfm) %>%
+  select(geno, max_temp, f, fm, fvfmraw, problem, fvfm) %>%
   nest(data = c(max_temp, f, fm, fvfmraw, fvfm, problem)) %>%
   # Fit the model to each coral
   mutate(ll3 = map(data, tryll3)) %>%
@@ -210,16 +213,16 @@ fmods <- dff %>%
 
 # Extract ed50 parameter values from model fits
 fed50 <- fmods %>%
-  select(treatment, geno, pars) %>%
+  select(geno, pars) %>%
   unnest(pars) %>%
   filter(term == "ED50")
 
 # Collect raw data, fitted values, and ed50 estimates
 fvals <- fmods %>%
-  select(treatment, geno, pred) %>%
+  select(geno, pred) %>%
   unnest(pred) %>%
   full_join(fed50) %>%
-  full_join(select(dff, treatment, geno, max_temp, f, fm, fvfmraw, problem, fvfm)) %>%
+  full_join(select(dff, geno, max_temp, f, fm, fvfmraw, problem, fvfm)) %>%
   rename(ed50 = estimate)
 ```
 
@@ -228,18 +231,24 @@ fvals <- fmods %>%
 ```{r plot, fig.width = 10, fig.height = 10}
 ed50 <- ed50 %>%
   mutate(tag_no = factor(tag_no))
+fed50 <- fed50 %>%
+  mutate(tag_no = factor(tag_no))
 
 
 vals <- vals %>%
   mutate(tag_no = fct_reorder(factor(tag_no), ed50, .fun = mean))
+fvals <- fvals %>%
+  mutate(geno = fct_reorder(factor(geno), fed50, .fun = mean))
 
-ggplot(vals, aes(x = max_temp, y = fvfm)) +
+ggplot(fvals, aes(x = max_temp, y = fvfm)) +
   geom_point() +
   geom_line(aes(y = .fitted)) +
-  geom_vline(aes(xintercept = estimate), data = ed50, lty = 2) +
-  geom_text(aes(x = estimate, y = 0.05, label = round(estimate, 2)), data = ed50,
+  geom_vline(aes(xintercept = estimate), data = fed50, lty = 2) +
+  geom_text(aes(x = estimate, y = 0.05, label = round(estimate, 2)), data = fed50,
             size = 2, nudge_x = -1.5) +
-  facet_wrap(~tag_no)
+  facet_wrap(~geno)
+
+hist(ed50$estimate, breaks = 30)
 ```
 
 
