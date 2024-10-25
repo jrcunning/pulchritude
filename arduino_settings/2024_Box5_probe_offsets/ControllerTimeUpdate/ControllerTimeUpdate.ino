@@ -68,7 +68,7 @@ DateTime t;
 // Make two files, one for logging the data and one for reading in the setpoints
 File logFile;
 File setpoints;
-String printdate = "pulchritude 2.0"; // No spaces, dashes, or underscores   **** generated Automaticaly ****
+String printdate = "pulchritude"; // No spaces, dashes, or underscores   **** generated Automaticaly ****
 // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
 OneWire oneWire(TempSensors);
 // Pass our oneWire reference to Dallas Temperature.
