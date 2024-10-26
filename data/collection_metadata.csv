@@ -208,21 +208,52 @@ mahana,20221213,8:27,org30,4,Shedd1,SM/HM,35,20221213,,,
 mahana,20221213,8:39,184,106,Shedd1,SM/HM,32,20221213,,,
 mahana,20221213,8:43,194,18,Shedd1,SM/HM,134,20221213,,,
 mahana,20221213,8:47,org51,113,Shedd1,SM/HM,40,20221213,,,
-access12,20241023,10:11,10,10,4,TC,55,,2,cunning3,
-access14,20241023,14:07,1,1,4,TC,29,,7,cunning3,
-access14,20241023,14:15,19,8,4,TC,44,,8,cunning3,
-access12,20241023,10:23,59,49,3,SM,22,,4,shayle,
-access14,20241023,14:30,57,60,3,SM,61,,3,shayle,
-access12,20241023,10:23,40,21,2,RC,87,,3,cunning2,
-access12,20241023,10:27,38,38,2,RC,66,,3,cunning2,
-access12,20241023,10:43,37,40,2,RC,95,,2,cunning2,
-access12,20241023,10:55,39,23,2,RC,22,,2,cunning2,
-access13,20241024,15:12,58,47,3,SM,61,,4,shayle,
-access13,20241024,15:21,56,53,3,SM,87,,6,shayle,
-access13,20241024,15:39,51N,59,3,SM,22,,7,shayle,north side of large thicket with tag 51
-access13,20241024,15:30,51S,46,3,SM,66,,7,shayle,south side of large thicket with tag 51
-access13,20241024,15:53,53,51,3,SM,95,,7,shayle,
-access13,20241024,16:02,52N,42,3,SM,44,,6,shayle,north side of large thicket with tag 52
-access13,20241024,16:05,52S,50,3,SM,55,,6,shayle,south side of large thicket with tag 52
-access13,20241024,15:28,14,9,4,TC,29,,5,cunning3,same thicket as tag 6
-access13,20241024,15:38,6,7,4,TC,171,,5,cunning3,same thicket as tag 14
+access12,20241023,10:11,10,10,4,TC,55,20241024,2,cunning3,
+access14,20241023,14:07,1,1,4,TC,29,20241024,7,cunning3,
+access14,20241023,14:15,19,8,4,TC,44,20241024,8,cunning3,
+access12,20241023,10:23,59,49,3,SM,22,20241024,4,shayle,
+access14,20241023,14:30,57,60,3,SM,61,20241024,3,shayle,
+access12,20241023,10:23,40,21,2,RC,87,20241024,3,cunning2,
+access12,20241023,10:27,38,38,2,RC,66,20241024,3,cunning2,
+access12,20241023,10:43,37,40,2,RC,95,20241024,2,cunning2,
+access12,20241023,10:55,39,23,2,RC,22,20241024,2,cunning2,
+access13,20241024,15:12,58,47,3,SM,61,20241025,4,shayle,
+access13,20241024,15:21,56,53,3,SM,87,20241025,6,shayle,
+access13,20241024,15:39,51N,59,3,SM,22,20241025,7,shayle,north side of large thicket with tag 51
+access13,20241024,15:30,51S,46,3,SM,66,20241025,7,shayle,south side of large thicket with tag 51
+access13,20241024,15:53,53,51,3,SM,95,20241025,7,shayle,
+access13,20241024,16:02,52N,42,3,SM,44,20241025,6,shayle,north side of large thicket with tag 52
+access13,20241024,16:05,52S,50,3,SM,55,20241025,6,shayle,south side of large thicket with tag 52
+access13,20241024,15:28,14,9,4,TC,29,20241025,5,cunning3,same thicket as tag 6
+access13,20241024,15:38,6,7,4,TC,171,20241025,5,cunning3,same thicket as tag 14
+NNF,20241025,8:20,30,39,Shedd2,RC,45,20241025,3,cunning2,same thicket as tag 34
+NNF,20241025,8:24,34,24,Shedd2,RC,42,20241025,3,cunning2,same thicket as tag 30
+NNF,20241025,8:30,32,28,Shedd2,RC,73,20241025,3,cunning2,
+NNF,20241025,8:36,33,25,Shedd2,RC,47,20241025,3,cunning2,
+NNF,20241025,8:44,31,37,Shedd2,RC,20,20241025,3,cunning2,
+NNF,20241025,8:50,25,32,Shedd2,RC,93,20241025,3,cunning2,
+NF,20241025,13:42,35,30,Shedd2,RC,47,,1,cunning2,same thicket as tag 21
+NF,20241025,13:50,21,31,Shedd2,RC,24,,1,cunning2,same thicket as tag 35
+NF,20241025,14:01,22,22,Shedd2,RC,93,,1,cunning2,
+NF,20241025,14:07,36,29,Shedd2,RC,46,,1,cunning2,
+NF,20241025,14:13,23,26,Shedd2,RC,20,,1,cunning2,
+NF,20241025,14:18,24,27,Shedd2,RC,73,,1,cunning2,
+NF,20241025,14:30,26,33,Shedd2,RC,42,,1,cunning2,
+NF,20241025,14:37,27,34,Shedd2,RC,43,,2,cunning2,
+NNF,20241025,8:29,3,6,Shedd4,TC,50,20241025,8,cunning3,
+NNF,20241025,8:53,2,5,Shedd4,TC,43,20241025,2,cunning3,
+NF,20241025,13:39,5,18,Shedd4,TC,44,,1,cunning3,same thicket as tag 10 and tag 9
+NF,20241025,13:48,10,3,Shedd4,TC,50,,1,cunning3,same thicket as tag 5 and tag 9
+NF,20241025,13:54,9,4,Shedd4,TC,21,,1,cunning3,same thicket as tag 5 and tag 10; eastern side
+NF,20241025,14:12,4,2,Shedd4,TC,85,,1,cunning3,same thicket as tag 15
+NF,20241025,14:17,15,12,Shedd4,TC,49,,1,cunning3,same thicket as tag 4
+NF,20241025,14:31,16,20,Shedd4,TC,45,,1,cunning3,
+NF,20241025,14:41,7,19,Shedd4,TC,61,,1,cunning3,
+NF,20241025,14:50,11,11,Shedd4,TC,171,,1,cunning3,
+NNF,20241025,8:23,45,48,Shedd3,SM,85,20241025,1,shayle,same thicket as tag 60
+NNF,20241025,8:30,60,56,Shedd3,SM,46,20241025,1,shayle,same thicket as tag 45
+NNF,20241025,8:39,43,52,Shedd3,SM,30,20241025,1,shayle,
+NNF,20241025,8:46,55,45,Shedd3,SM,26,20241025,1,shayle,same thicket as tag 54
+NNF,20241025,8:52,54,55,Shedd3,SM,24,20241025,1,shayle,
+NNF,20241025,9:00,46,44,Shedd3,SM,21,20241025,1,shayle,same thicket as tag 44
+NNF,20241025,9:10,44,54,Shedd3,SM,49,20241025,1,shayle,same thicket as tag 46
