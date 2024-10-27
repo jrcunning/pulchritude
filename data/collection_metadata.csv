@@ -232,24 +232,24 @@ NNF,20241025,8:30,32,28,Shedd2,RC,73,20241025,3,cunning2,
 NNF,20241025,8:36,33,25,Shedd2,RC,47,20241025,3,cunning2,
 NNF,20241025,8:44,31,37,Shedd2,RC,20,20241025,3,cunning2,
 NNF,20241025,8:50,25,32,Shedd2,RC,93,20241025,3,cunning2,
-NF,20241025,13:42,35,30,Shedd2,RC,47,,1,cunning2,same thicket as tag 21
-NF,20241025,13:50,21,31,Shedd2,RC,24,,1,cunning2,same thicket as tag 35
-NF,20241025,14:01,22,22,Shedd2,RC,93,,1,cunning2,
-NF,20241025,14:07,36,29,Shedd2,RC,46,,1,cunning2,
-NF,20241025,14:13,23,26,Shedd2,RC,20,,1,cunning2,
-NF,20241025,14:18,24,27,Shedd2,RC,73,,1,cunning2,
-NF,20241025,14:30,26,33,Shedd2,RC,42,,1,cunning2,
-NF,20241025,14:37,27,34,Shedd2,RC,43,,2,cunning2,
+NF,20241025,13:42,35,30,Shedd2,RC,47,20241026,1,cunning2,same thicket as tag 21
+NF,20241025,13:50,21,31,Shedd2,RC,24,20241026,1,cunning2,same thicket as tag 35
+NF,20241025,14:01,22,22,Shedd2,RC,93,20241026,1,cunning2,
+NF,20241025,14:07,36,29,Shedd2,RC,46,20241026,1,cunning2,
+NF,20241025,14:13,23,26,Shedd2,RC,20,20241026,1,cunning2,
+NF,20241025,14:18,24,27,Shedd2,RC,73,20241026,1,cunning2,
+NF,20241025,14:30,26,33,Shedd2,RC,42,20241026,1,cunning2,
+NF,20241025,14:37,27,34,Shedd2,RC,43,20241026,2,cunning2,
 NNF,20241025,8:29,3,6,Shedd4,TC,50,20241025,8,cunning3,
 NNF,20241025,8:53,2,5,Shedd4,TC,43,20241025,2,cunning3,
-NF,20241025,13:39,5,18,Shedd4,TC,44,,1,cunning3,same thicket as tag 10 and tag 9
-NF,20241025,13:48,10,3,Shedd4,TC,50,,1,cunning3,same thicket as tag 5 and tag 9
-NF,20241025,13:54,9,4,Shedd4,TC,21,,1,cunning3,same thicket as tag 5 and tag 10; eastern side
-NF,20241025,14:12,4,2,Shedd4,TC,85,,1,cunning3,same thicket as tag 15
-NF,20241025,14:17,15,12,Shedd4,TC,49,,1,cunning3,same thicket as tag 4
-NF,20241025,14:31,16,20,Shedd4,TC,45,,1,cunning3,
-NF,20241025,14:41,7,19,Shedd4,TC,61,,1,cunning3,
-NF,20241025,14:50,11,11,Shedd4,TC,171,,1,cunning3,
+NF,20241025,13:39,5,18,Shedd4,TC,44,20241026,1,cunning3,same thicket as tag 10 and tag 9
+NF,20241025,13:48,10,3,Shedd4,TC,50,20241026,1,cunning3,same thicket as tag 5 and tag 9
+NF,20241025,13:54,9,4,Shedd4,TC,21,20241026,1,cunning3,same thicket as tag 5 and tag 10; eastern side
+NF,20241025,14:12,4,2,Shedd4,TC,85,20241026,1,cunning3,same thicket as tag 15
+NF,20241025,14:17,15,12,Shedd4,TC,49,20241026,1,cunning3,same thicket as tag 4
+NF,20241025,14:31,16,20,Shedd4,TC,45,20241026,1,cunning3,
+NF,20241025,14:41,7,19,Shedd4,TC,61,20241026,1,cunning3,
+NF,20241025,14:50,11,11,Shedd4,TC,171,20241026,1,cunning3,
 NNF,20241025,8:23,45,48,Shedd3,SM,85,20241025,1,shayle,same thicket as tag 60
 NNF,20241025,8:30,60,56,Shedd3,SM,46,20241025,1,shayle,same thicket as tag 45
 NNF,20241025,8:39,43,52,Shedd3,SM,30,20241025,1,shayle,
@@ -257,3 +257,25 @@ NNF,20241025,8:46,55,45,Shedd3,SM,26,20241025,1,shayle,same thicket as tag 54
 NNF,20241025,8:52,54,55,Shedd3,SM,24,20241025,1,shayle,
 NNF,20241025,9:00,46,44,Shedd3,SM,21,20241025,1,shayle,same thicket as tag 44
 NNF,20241025,9:10,44,54,Shedd3,SM,49,20241025,1,shayle,same thicket as tag 46
+MooreaFunDive,20241026,12:24,20,10,Shedd3,SM,29,,3,shayle ,
+MooreaFunDive,20241026,12:33,71,42,Shedd3,SM,20,,3,shayle ,**all one monster thicket 
+MooreaFunDive,20241026,12:38,72,47,Shedd3,SM,85,,3,shayle ,
+MooreaFunDive,20241026,12:45,49,38,Shedd3,SM,73,,3,shayle ,
+MooreaFunDive,20241026,12:51,48,55,Shedd3,SM,49,,2,shayle ,
+MooreaFunDive,20241026,12:58,50,6,Shedd3,SM,45,,2,shayle ,
+MooreaFunDive,20241026,13:07,42,37,Shedd3,SM,61,,3,shayle ,
+MooreaFunDive,20241026,13:13,80,24,Shedd3,SM,171,,3,shayle ,
+MooreaFunDive,20241026,13:19,41,25,Shedd3,SM,50,,3,shayle ,
+MooreaFunDive,20241026,13:26,77,5,Shedd3,SM,44,,2,shayle ,
+MooreaFunDive,20241026,12:22,82,13,Shedd2,RC,21,,5,cunning2,
+MooreaFunDive,20241026,12:27,89,14,Shedd2,RC,42,,3,cunning2,
+MooreaFunDive,20241026,12:33,88,46,Shedd2,RC,30,,3,cunning2,
+MooreaFunDive,20241026,12:37,100,15,Shedd2,RC,93,,3,cunning2,
+MooreaFunDive,20241026,12:42,84,16,Shedd2,RC,47,,3,cunning2,
+MooreaFunDive,20241026,12:49,87,17,Shedd2,RC,95,,3,cunning2,
+MooreaFunDive,20241026,12:54,62,36,Shedd2,RC,46,,1,cunning2,
+MooreaFunDive,20241026,13:04,61,35,Shedd2,RC,26,,4,cunning2,
+MooreaFunDive,20241026,13:10,63,45,Shedd2,RC,66,,5,cunning2,
+MooreaFunDive,20241026,13:16,65,7,Shedd2,RC,43,,3,cunning2,
+MooreaFunDive,20241026,13:21,69,23,Shedd2,RC,55,,3,cunning2,
+MooreaFunDive,20241026,13:28,67,1,Shedd2,RC,24,,3,cunning2,
