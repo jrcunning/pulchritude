@@ -37,13 +37,7 @@ md %>% filter(year(date_time) == "2024") %>%
 # Read in GPS tracks
 gps_track_files <- list.files("data/gps_tracks", full.names = TRUE)
 
-# Original code to read files that are single tracks (42 lines before header row)
-gps_tracks0 <- map_dfr(gps_track_files, read_csv, skip = 42, .id = "file_id") %>%
-  janitor::clean_names() %>%
-  mutate(file_id = basename(gps_track_files[as.numeric(file_id)])) %>%
-  separate(file_id, into = c("gps_id", "date"), sep = "_")
-
-# New code to dynamically read files that have single or multiple tracks (variable numbers of lines before header row)
+# Dynamically read files that have single or multiple tracks (variable numbers of lines before header row)
 # Define a function to read each CSV with a flexible header row
 read_csv_with_flexible_header <- function(file_path) {
   # Read in the first few lines to determine header location
@@ -62,32 +56,32 @@ gps_tracks0 <- map_dfr(gps_track_files, read_csv_with_flexible_header, .id = "fi
 gps_tracks1 <- gps_tracks0 %>%
   janitor::clean_names() %>%
   mutate(file_id = basename(gps_track_files[as.numeric(file_id)]),
-         gps_id = str_sub(file_id, start = 1, end = 6),
-         date = as_date(str_sub(file_id, start = 8, end = 15), format = "%Y%m%d")) %>%
-  select(file_id, gps_id, date, trkseg_id, lat, lon, time)
+         gps_id = str_sub(file_id, start = 1, end = 6))
 
-# Convert to correct time zone
+# Convert to correct time zone, and get date sampled (conversion needs to be done before getting date because dateline)
 gps_tracks2 <- gps_tracks1 %>%
-  select(gps_id, date, time, lat, lon) %>%
+  select(gps_id, time, lat, lon) %>%
   mutate(date_time = as_datetime(time, tz = "Pacific/Tahiti"),
+         date = as_date(date_time),
          date_time_min = format(date_time, "%F %H:%M"))
 
 # Get last lat/lon recorded for each discrete minute
-gps_tracks <- gps_tracks %>%
+gps_tracks3 <- gps_tracks2 %>%
   group_by(gps_id, date_time_min) %>%
   summarise(across(everything(), last))
-
-gps_tracks3 <- filter(gps_tracks, gps_id == "Shedd3")
-gps_tracks3 %>% 
-  mutate(date = as_date(date_time)) %>%
-  distinct(gps_id, date)
 ```
 
 ```{r}
 # Pull coral lat/lon from gps tracks based on date/time sampled
-df <- left_join(md, gps_tracks, by = c("gps_id", "date_time_min"))
+df <- left_join(md, gps_tracks3, by = c("gps_id", "date_time_min"))
 
 View(df)
+```
+
+```{r}
+ggplot(df, aes(x = lon, y = lat)) +
+  geom_point() +
+  theme_minimal()
 ```
 
 
