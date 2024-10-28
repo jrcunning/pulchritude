@@ -16,7 +16,7 @@ library(lubridate)
 ```{r}
 # Read in coral collection info
 md <- read_csv("data/collection_metadata.csv") %>%
-  unite(date_time, date_sampled, time_sampled, sep = " ") %>%
+  unite(date_time, date_sampled, time_sampled, sep = " ", remove = FALSE) %>%
   mutate(date_time = ymd_hms(date_time, tz = "Pacific/Tahiti"),
          date_time_min = format(date_time, "%F %H:%M"))
 
@@ -27,19 +27,48 @@ md <- read_csv("data/collection_metadata.csv") %>%
 # write_csv(md, "colony_metadata_parsed.csv")
 
 md[which(duplicated(md$basket_no)),]
+
+
+md %>% filter(year(date_time) == "2024") %>%
+  distinct(gps_id, date_sampled)
 ```
 
 ```{r}
 # Read in GPS tracks
 gps_track_files <- list.files("data/gps_tracks", full.names = TRUE)
 
-gps_tracks <- map_dfr(gps_track_files, read_csv, skip = 42, .id = "file_id") %>%
+# Original code to read files that are single tracks (42 lines before header row)
+gps_tracks0 <- map_dfr(gps_track_files, read_csv, skip = 42, .id = "file_id") %>%
   janitor::clean_names() %>%
   mutate(file_id = basename(gps_track_files[as.numeric(file_id)])) %>%
   separate(file_id, into = c("gps_id", "date"), sep = "_")
 
-gps_tracks <- gps_tracks %>%
-  select(gps_id, time, lat, lon) %>%
+# New code to dynamically read files that have single or multiple tracks (variable numbers of lines before header row)
+# Define a function to read each CSV with a flexible header row
+read_csv_with_flexible_header <- function(file_path) {
+  # Read in the first few lines to determine header location
+  lines <- readr::read_lines(file_path, n_max = 100)  # Adjust n_max if header may be farther down
+  
+  # Find the line that contains the expected column name pattern
+  header_row <- which(grepl("trksegID", lines))[1]  # replace with actual column name pattern
+  
+  # Read the CSV starting from the header row
+  readr::read_csv(file_path, skip = header_row - 1)
+}
+
+gps_tracks0 <- map_dfr(gps_track_files, read_csv_with_flexible_header, .id = "file_id")
+
+# Tidy
+gps_tracks1 <- gps_tracks0 %>%
+  janitor::clean_names() %>%
+  mutate(file_id = basename(gps_track_files[as.numeric(file_id)]),
+         gps_id = str_sub(file_id, start = 1, end = 6),
+         date = as_date(str_sub(file_id, start = 8, end = 15), format = "%Y%m%d")) %>%
+  select(file_id, gps_id, date, trkseg_id, lat, lon, time)
+
+# Convert to correct time zone
+gps_tracks2 <- gps_tracks1 %>%
+  select(gps_id, date, time, lat, lon) %>%
   mutate(date_time = as_datetime(time, tz = "Pacific/Tahiti"),
          date_time_min = format(date_time, "%F %H:%M"))
 
@@ -47,6 +76,11 @@ gps_tracks <- gps_tracks %>%
 gps_tracks <- gps_tracks %>%
   group_by(gps_id, date_time_min) %>%
   summarise(across(everything(), last))
+
+gps_tracks3 <- filter(gps_tracks, gps_id == "Shedd3")
+gps_tracks3 %>% 
+  mutate(date = as_date(date_time)) %>%
+  distinct(gps_id, date)
 ```
 
 ```{r}
