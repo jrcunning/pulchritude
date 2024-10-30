@@ -79,6 +79,13 @@ View(df)
 ```
 
 ```{r}
+# Plot whole tracks?
+ggplot(gps_tracks3, aes(x = lon, y = lat)) +
+  geom_point() +
+  theme_minimal()
+```
+
+```{r}
 ggplot(df, aes(x = lon, y = lat)) +
   geom_point() +
   theme_minimal()
@@ -93,7 +100,9 @@ write_csv(df, "data/colony_coords.csv")
 
 
 ```{r}
-
-
+# Get tag meta data for freezing frags
+df %>%
+  filter(date_CBASS == "20241027") %>%
+  print(n = nrow(.))
 ```
 
