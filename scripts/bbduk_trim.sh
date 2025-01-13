@@ -18,10 +18,10 @@ DIR=/data/putnamlab/tconn/apul_reseq/H2WLFDSXF/8740
 OUT=/data/putnamlab/tconn/apul_reseq/trimmed
 
 parallel --plus echo {%R._001.fastq.gz} ::: *.fastq.gz | parallel 'bbduk.sh \
-in1=$DIR/.fq.gz \
-in2=$DIR/Unknown_BK461-020033_2.fq.gz \
-out1=$OUT/20033_1trimmed.fq.gz \
-out2=$OUT/20033_2trimmed.fq.gz \
+in1=$DIR/{}R1_001.fastq.gz \
+in2=$DIR/{}R2_001.fastq.gz \
+out1=$OUT/{}trimmed_R1.fastq.gz \
+out2=$OUT/{}trimmed_R2.fastq.gz \
 ref=/data/putnamlab/tconn/apul_reseq/adapters.fa \
 ktrim=r \
 k=23 \
@@ -34,3 +34,4 @@ tossbrokenreads=t \
 trimq=20 \
 maq=20 \
 minlen=50 
+'
