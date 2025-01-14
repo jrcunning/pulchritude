@@ -10,14 +10,14 @@
 source ~/.bashrc
 conda  activate bbmap
 module load parallel/20220722-GCCcore-11.3.0 
-cd  /data/putnamlab/tconn/apul_reseq
+cd  /data/putnamlab/tconn/apul_reseq/H2WLFDSXF/8740
 
 DIR=/data/putnamlab/tconn/apul_reseq/H2WLFDSXF/8740
 OUT=/data/putnamlab/tconn/apul_reseq/trimmed
 
-parallel -j 20 'bbduk.sh \
-in1=$DIR/{} \
-in2=$DIR/{=s/R1/R2/=} \
+parallel -j 20 bbduk.sh \
+in1={} \
+in2={=s/R1/R2/=} \
 out1=$OUT/{%.R1.fastq.gz}.trimmed.R1.fastq.gz \
 out2=$OUT/{%.R1.fastq.gz}.trimmed.R2.fastq.gz \
 ref=/data/putnamlab/tconn/apul_reseq/adapters.fa \
@@ -31,4 +31,4 @@ qtrim=r \
 tossbrokenreads=t \
 trimq=20 \
 maq=20 \
-minlen=50' ::: *R1_001.fastq.gz
+minlen=50 ::: *_L003_R1_001.fastq.gz
