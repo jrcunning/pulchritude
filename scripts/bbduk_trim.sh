@@ -20,7 +20,7 @@ in1={} \
 in2={=s/R1/R2/=} \
 out1=$OUT/{%.R1.fastq.gz}.trimmed.R1.fastq.gz \
 out2=$OUT/{%.R1.fastq.gz}.trimmed.R2.fastq.gz \
-ref=/data/putnamlab/tconn/apul_reseq/adapters.fa \
+ref=/home/trinity.conn/.conda/envs/bbmap/opt/bbmap-39.13-1/resources/adapters.fa \
 ktrim=r \
 k=23 \
 mink=11 \
