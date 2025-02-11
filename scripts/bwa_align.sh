@@ -9,7 +9,7 @@
 #SBATCH -e slurm-%j.error
 
 source ~/.bashrc
-
+PATH=$PATH
 ##load bwa
 conda  activate sambamba
 
@@ -19,8 +19,10 @@ cd /data/putnamlab/tconn/apul_reseq/trimmed
 
 #loop through files 
 for i in $(ls -1 *.trimmed.R1.fastq.gz | sed 's/\.trimmed.R1.fastq.gz//'); do 
+
 #skip  the files if a bam already exists 
-	if [-f "${i}.bam" ]; then 
+	bam_file="${i}.bam"
+	if [ -f "$bam_file" ]; then 
 	echo "Skipping ${i}, BAM file already exists."
 	continue 
 	fi
@@ -30,4 +32,5 @@ echo "Processing ${i}..."
 bwa mem -t 20 /data/putnamlab/tconn/annotate_results/final_files/Acropora_pulchra_v1.1.fa.masked  $i\.trimmed.R1.fastq.gz  $i\.trimmed.R2.fastq.gz  |samtools view -S -b  -o - - | samtools sort -o $i.bam
 
 done
+
 
