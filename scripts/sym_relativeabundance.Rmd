@@ -1,0 +1,115 @@
+---
+title: "Estimating Relative Abundance of Symbiodiniaceae genera based on Whole Genome Sequencing"
+author: "Trinity Conn"
+date: "2025-02-14"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+## R Markdown
+Whole genome data was aligned to the four symbiodiniaceae genomes using bbsplit, and the output was .fq files with the reads that aligned to that genome. I can use the method used in Fuller et al (2020) to calculate relative abundance -- will need to make some judgements to handle how to differentiate between just reads aligning because its a symbiodiniaceae -- align reads to each other and remove ones that are conserved? Remove reads that are conserved across all 4 genomes?
+
+
+
+```{r read inand process }
+
+#read in files with symbiont read counts 
+#set working directory 
+
+setwd("/Users/trini/Documents/Shedd/symbiont_pulchra")
+
+#read in files in directory 
+filelist=list.files(pattern="*.txt")
+
+datalist=lapply(filelist, function(x)read.table(x, header=FALSE))
+
+#add in column for filename 
+for (i in 1:length(datalist)){datalist[[i]]<-cbind(datalist[[i]],filelist[i])}
+
+#combine rows of all imported files and rename read count file 
+data_sym=do.call("rbind", datalist)
+colnames(data_sym)[1]="readcount"
+colnames(data_sym)[2]="filename"
+
+#extract sample ID and symbiont genus from the file name 
+
+data_sym<-data_sym%>%
+  mutate(
+    sym=str_extract(filename, "(?<=\\.gz_)[a-zA-Z](?=\\.fq)"),
+    genet=str_extract(filename, "^[^_]+")
+  )
+
+#correct to upper case
+data_sym$sym<-toupper(data_sym$sym)
+
+#load in genome size estimates 
+#genome size was calculated from the fasta files used for alignment using the awk phrase awk '!/^>/ {total += length($0)} END {print total}' ${GENOME}
+
+#genome size A 808242489
+#genome size B 609476485
+#genome size C 1027792016
+#genome size D 695292810
+
+genomes<-data.frame(sym=c("A", "B", "C", "D"), 
+                    genomesize=c("808242489", "609476485", "1027792016", "695292810"))
+
+#merge with read count file 
+
+data_sym2<-merge(data_sym, genomes, by=c("sym"))
+
+data_sym2$readcount<-as.numeric(data_sym2$readcount)
+data_sym2$genomesize<-as.numeric(data_sym2$genomesize)
+data_sym2<-data_sym2%>%
+  mutate(readprop=readcount/genomesize)
+
+data_sym3<-data_sym2%>%
+  pivot_wider(id_cols = genet, names_from = sym, values_from = readprop)
+
+colnames(data_sym3)[2]="piA"
+colnames(data_sym3)[3]="piB"
+colnames(data_sym3)[4]="piC"
+colnames(data_sym3)[5]="piD"
+
+
+data_sym3<-data_sym3%>%
+  mutate(totalsym=piA+piB+piC+piD)
+
+
+data_sym4<-data_sym3%>%
+  mutate(abunA=piA/totalsym*100)%>%
+  mutate(abunB=piB/totalsym*100)%>%
+  mutate(abunC=piC/totalsym*100)%>%
+  mutate(abunD=piD/totalsym*100)
+
+
+data_sym4
+
+write.csv(data_sym4, file="symbiontabundances.csv")
+
+pergenet<-data_sym4%>%
+  
+
+
+
+
+```
+
+```{r plot }
+library(cowplot)
+a<-ggplot(data_sym4, aes(abunA))+geom_histogram()+xlim(0,100)
+b<-ggplot(data_sym4, aes(abunB))+geom_histogram()+xlim(0,100)
+c<-ggplot(data_sym4, aes(abunC))+geom_histogram()+xlim(0,100)
+d<-ggplot(data_sym4, aes(abunD))+geom_histogram()+xlim(0,100)
+
+cowplot::plot_grid(a,b,c,d)
+
+```
+
+```{r combine with metadata and plot}
+
+
+```

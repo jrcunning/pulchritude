@@ -47,5 +47,5 @@ DB="SymPortal_unique_DIVs.fasta"
 ls /data/putnamlab/tconn/apul_reseq/trimmed/*.fasta | parallel -j 20 blastn -task blastn -query {} -db "$DB" \
 -num_threads 20 \
 -outfmt 6 \
--evalue 1e-10 \
+-evalue 1e-40 \
 -out {.}.its2.blast.out
