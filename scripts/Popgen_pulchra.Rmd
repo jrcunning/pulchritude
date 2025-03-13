@@ -1,0 +1,175 @@
+---
+title: "Population Genomics of Acropora pulchra"
+author: "Trinity Conn"
+date: "2025-03-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#first load in ngsrelate results. This has calculated the KING coefficient using the Identity By State (IBS) framework -- this allows us to identify clones and/or familial relationships. ngsRelate was run on the genotype likelihoods and allele frequencies as output by ANGSD -- no snps were pruned for LD prior. LD pruning will occur post-clonal pruning. 
+
+```{r cars}
+##load in ngs relate file 
+library(tidyverse)
+pulchra_ngsrelate <- read.delim("~/Downloads/pulchra_ngsrelate")
+
+colnames(pulchra_ngsrelate)[1]="indv1"
+colnames(pulchra_ngsrelate)[2]="indv2"
+
+#filter to just the KING coefficients 
+
+king<-pulchra_ngsrelate%>%
+  dplyr::select(c(indv1, indv2, KING))
+
+
+#load in metadata about individuals 
+library(readr)
+SDS_sample_metadata <- read_csv("../data/SDS_sample_metadata.csv")
+pulchra_sequencingmetadata <- read_csv("../data/pulchra_sequencingmetadata.csv")
+
+names(pulchra_sequencingmetadata)[names(pulchra_sequencingmetadata) == 'date_sampled'] <- 'date_collected'
+names(pulchra_sequencingmetadata)[names(pulchra_sequencingmetadata) == 'basket no.'] <- 'basket'
+
+metadata<-merge(SDS_sample_metadata, pulchra_sequencingmetadata, by=c('date_collected', 'basket'
+                                                                      ))
+
+write.csv(metadata, file="../data/pulchra_sequencingmetadata.csv")
+
+##load in filenames and extract genet names 
+
+colnames(filenames)[1]="filename"
+filenames<-filenames%>%
+  mutate(genet = str_extract(filename, "^[^_]+") )
+
+
+metadata2<-merge(filenames, pulchra_sequencingmetadata, by=c("genet"))
+
+#load in bam list with the way it was ordered as put into ANGSD
+
+bamlist <- read.delim("~/Documents/Shedd/symbiont_pulchra/bamlist.txt")
+
+metadata3<-merge(metadata2, bamlist, by=c("filename"))
+
+##merge metadata with the relatedness file to assign genet ids to the matrix
+
+
+king2<-king %>% mutate(across(.fns = ~metadata3$genet[match(., metadata3$indv1)]))
+
+king3<-cbind(king2,king)
+colnames(king3)[6]<-"KINGCO"
+king3<-king3%>%
+  dplyr::select(c('indv1', 'indv2', 'KINGCO'))
+
+ggplot(king3, aes(x=KINGCO))+geom_density()+theme_bw()+geom_vline(xintercept=0.4, color="red", linetype="dashed")
+
+
+
+```
+```{r creating clonal ids}
+pairwise_df<-king3
+
+assign_clonal_groups <- function(pairwise_df) {
+  library(igraph)
+  
+  # Extract all unique individuals
+  all_individuals <- unique(c(pairwise_df$indv1, pairwise_df$indv2))
+  
+  # Create a graph where nodes are individuals and edges connect clones
+  edges <- pairwise_df[pairwise_df$KINGCO >= 0.4, c("indv1", "indv2")]
+  
+  if (nrow(edges) > 0) {
+    g <- graph_from_data_frame(edges, directed = FALSE, vertices = all_individuals)
+    clusters <- components(g)$membership
+  } else {
+    clusters <- setNames(seq_along(all_individuals), all_individuals)
+  }
+  
+  # Convert to dataframe
+  clonal_groups <- data.frame(individual = names(clusters), clonal_group = clusters)
+  
+  return(clonal_groups)
+}
+
+
+
+assign_clonal_groups(king3)
+colnames(clonal_groups)[1]<-"genet"
+
+#merge with metadata 
+
+metadata4<-merge(clonal_groups, metadata3, by=c("genet"))
+write.csv(metadata4, file="Metadata_withclones.csv")
+
+#create a list of genets from unique clonal groups 
+
+metadata4$clonal_group<-as.numeric(metadata4$clonal_group)
+unique<-metadata4%>%
+  distinct(clonal_group, .keep_all=TRUE)
+
+nclones<-unique%>%
+  group_by(site, clonal_group)%>%
+  count(clonal_group)
+nclones
+#write list of filenames to filter with 
+write.table(unique$filename, file="bamlist_noclones.txt")
+
+
+
+```
+
+```{r}
+trait<-ed50
+geo<-df
+colnames(trait)[2]<-"tag no."
+colnames(geo)[5]<-"tag.no."
+trait<-trait%>%
+  filter(!str_detect(trait$date, "2024"))
+geo<-geo%>%
+  filter(!str_detect(geo$date, "2024"))
+
+df_full<-merge(unique, geo, by=c("tag.no."))
+df_full$clonal_group<-as.character(df_full$clonal_group)
+two<-df_full%>%
+  filter(site.x=="hauru")
+ggplot(two, aes(x = lon, y = lat, group=site.x, color=clonal_group)) +
+  geom_point(size=3)+theme_minimal()
+
+ggplot(two, aes(x = estimate, fill = clonal_group)) +
+  geom_histogram(position = "stack", alpha = 0.4, binwidth = 0.2) +
+  theme_minimal()
+
+
+
+
+```
+
+```{r}
+
+#plotting distance by lat and lon
+
+#install.packages('geosphere')
+library(geosphere)
+
+distance<-distm(cbind(two$lon, two$lat),
+                fun=distHaversine)
+
+print(distance)
+
+rownames(distance)<-two$genet
+colnames(distance)<-two$genet
+xy <- t(combn(colnames(distance), 2))
+data<-data.frame(xy, dist=distance[xy])
+
+colnames(data)[1]="indv1"
+colnames(data)[2]="indv2"
+data
+data<-data%>%
+  filter(dist!=0.00000)
+plot(data$dist)
+mean(data$dist)
+median(data$dist)
+
+```
